@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZapShare Ultra - Pro Core</title>
-   <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
     <meta name="theme-color" content="#2563eb">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -21,6 +21,11 @@
         }
         .anim-fly { animation: flyAway 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
         #reader video { border-radius: 1rem; object-fit: cover; }
+        
+        /* Custom scrollbar behavior for cleaner chat workspace layout */
+        #chatStreamArea::-webkit-scrollbar { width: 4px; }
+        #chatStreamArea::-webkit-scrollbar-track { background: transparent; }
+        #chatStreamArea::-webkit-scrollbar-thumb { background: #475569; border-radius: 9999px; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between">
@@ -115,6 +120,39 @@
             </div>
         </section>
 
+        <section id="clipboardTab" class="tab-content space-y-4">
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex flex-col h-[480px]">
+                
+                <div class="bg-slate-950/80 p-3 border-b border-slate-700 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-xs text-white">🔏</div>
+                        <div>
+                            <h3 class="text-xs font-bold text-white leading-none">Shared Clipboard Stream</h3>
+                            <span class="text-[10px] text-emerald-400 font-medium">End-to-End Handshaked</span>
+                        </div>
+                    </div>
+                    <i data-lucide="messages-square" class="w-4 h-4 text-slate-400"></i>
+                </div>
+
+                <div id="chatStreamArea" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/40">
+                    <div id="chatEmptyPlaceholder" class="text-center py-8 text-[11px] text-slate-500 max-w-[240px] mx-auto">
+                        💬 No clipboard items synced yet. Type below and hit Enter to transfer.
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-900 border-t border-slate-700">
+                    <div class="flex gap-2 items-end bg-slate-950 rounded-xl p-1.5 border border-slate-700">
+                        <textarea id="textShareInput" rows="1" placeholder="Message (Enter to send)..." class="flex-1 bg-transparent text-sm p-1.5 text-slate-100 focus:outline-none placeholder-slate-600 resize-none max-h-24 min-h-[36px] overflow-y-auto"></textarea>
+                        <button id="btnSendText" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition active:scale-95 shadow-md self-center">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-1.5 px-1">Press <strong>Enter</strong> to send. Use <strong>Shift + Enter</strong> for a new line.</p>
+                </div>
+
+            </div>
+        </section>
+
         <section id="receiveTab" class="tab-content space-y-4">
             <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
                 <h2 class="text-lg font-bold flex items-center gap-2 text-white"><i data-lucide="download" class="text-emerald-400"></i> Transfer Stream</h2>
@@ -191,13 +229,18 @@
 
     <div id="toastNotification" class="fixed bottom-24 left-4 right-4 max-w-xs mx-auto bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs font-medium text-center z-50 pointer-events-none opacity-0 transform translate-y-2 transition-all duration-300"></div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 py-2 px-4 flex justify-around items-center z-10 max-w-md mx-auto rounded-t-2xl shadow-2xl">
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 py-2 px-2 flex justify-around items-center z-10 max-w-md mx-auto rounded-t-2xl shadow-2xl">
         <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center text-blue-500" data-tab="home">
             <i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Home</span>
         </button>
         <button onclick="switchTab('send')" class="nav-btn flex flex-col items-center text-slate-400" data-tab="send">
             <i data-lucide="send" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Send</span>
         </button>
+        
+        <button onclick="switchTab('clipboard')" class="nav-btn flex flex-col items-center text-slate-400 scale-110 px-2 py-1 bg-slate-900/50 rounded-xl border border-slate-700/40" data-tab="clipboard">
+            <i data-lucide="clipboard" class="w-5 h-5 text-amber-400"></i><span class="text-[10px] font-bold mt-0.5">Clipboard</span>
+        </button>
+        
         <button onclick="switchTab('receive')" class="nav-btn flex flex-col items-center text-slate-400" data-tab="receive">
             <i data-lucide="download" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Receive</span>
         </button>
@@ -284,6 +327,12 @@
             document.getElementById(`${id}Tab`).classList.add('active');
             document.querySelector(`[data-tab="${id}"]`).classList.remove('text-slate-400');
             document.querySelector(`[data-tab="${id}"]`).classList.add('text-blue-500');
+            
+            // Auto scroll down to fresh messages when accessing the chat window layout
+            if(id === 'clipboard') {
+                const stream = document.getElementById('chatStreamArea');
+                stream.scrollTop = stream.scrollHeight;
+            }
         }
 
         function bindInterfaceEvents() {
@@ -310,9 +359,19 @@
             document.getElementById('dropZone').addEventListener('click', () => document.getElementById('fileInput').click());
             document.getElementById('fileInput').addEventListener('change', e => { if(e.target.files.length) stageOutboundFile(e.target.files[0]); });
             
-            // FIXED INTERACTION BINDINGS FOR MODAL FLOW CONTROL
             document.getElementById('btnAcceptStream').addEventListener('click', acceptFileDownloadStream);
             document.getElementById('btnRejectStream').addEventListener('click', closeInboundPopup);
+
+            // Chat input handlers
+            document.getElementById('btnSendText').addEventListener('click', dispatchClipboardTextMessage);
+            
+            // Capture Enter key mapping for rapid submission processing
+            document.getElementById('textShareInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); // Stop newline addition block execution
+                    dispatchClipboardTextMessage();
+                }
+            });
         }
 
         function startReceiveScannerProtocol() {
@@ -385,16 +444,82 @@
             networkConnection.send(JSON.stringify({ type: 'meta', name: file.name, size: file.size, mime: file.type }));
         }
 
+        // Programmatically generate individual, localized copy capabilities inside chat modules
+        function appendChatMessageBubble(content, isSender = true) {
+            const streamArea = document.getElementById('chatStreamArea');
+            const placeholder = document.getElementById('chatEmptyPlaceholder');
+            if(placeholder) placeholder.remove();
+
+            // Create container element row alignment layer
+            const rowWrapper = document.createElement('div');
+            rowWrapper.className = `flex w-full ${isSender ? 'justify-end' : 'justify-start'}`;
+
+            // Format dynamic bubbles via WhatsApp constraints
+            const bubble = document.createElement('div');
+            bubble.className = `max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-md flex items-end gap-3 relative group ${
+                isSender 
+                ? 'bg-blue-600 text-white rounded-tr-none' 
+                : 'bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700/60'
+            }`;
+
+            const textSpan = document.createElement('span');
+            textSpan.className = "break-all whitespace-pre-wrap selection:bg-slate-900/60";
+            textSpan.innerText = content;
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = "text-slate-400 hover:text-white p-1 rounded transition active:scale-90 bg-slate-950/20";
+            copyBtn.innerHTML = `<i data-lucide="copy" class="w-3.5 h-3.5"></i>`;
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(content).then(() => {
+                    showMessage("Bubble text copied!", true);
+                }).catch(() => {
+                    showMessage("Copy processing failed.", false);
+                });
+            };
+
+            bubble.appendChild(textSpan);
+            bubble.appendChild(copyBtn);
+            rowWrapper.appendChild(bubble);
+            streamArea.appendChild(rowWrapper);
+
+            // Re-render new Lucide assets injected directly inside nodes
+            lucide.createIcons();
+
+            // Auto-scroll context container pipeline downward
+            streamArea.scrollTop = streamArea.scrollHeight;
+        }
+
+        function dispatchClipboardTextMessage() {
+            if(!networkConnection) return showMessage("Pair devices before transmitting text data!", false);
+            const textInputField = document.getElementById('textShareInput');
+            const rawMessage = textInputField.value.trim();
+            
+            if(!rawMessage) return showMessage("Cannot send an empty message slot.", false);
+
+            networkConnection.send(JSON.stringify({ type: 'textClip', content: rawMessage }));
+            appendChatMessageBubble(rawMessage, true);
+            textInputField.value = ""; 
+            showMessage("Text message beamed over!", true);
+        }
+
         function parseInboundPayloadMessage(payload) {
             if(typeof payload === 'string') {
                 const msg = JSON.parse(payload);
+                
+                if(msg.type === 'textClip') {
+                    appendChatMessageBubble(msg.content, false);
+                    switchTab('clipboard');
+                    showMessage("Inbound text clipboard message arrived!", true);
+                    if(navigator.vibrate) navigator.vibrate([80, 40, 80]);
+                    return;
+                }
+
                 if(msg.type === 'meta') {
                     expectedName = msg.name; expectedSize = msg.size; expectedMime = msg.mime;
                     receivedChunks = [];
                     document.getElementById('receiveSuccessState').classList.add('hidden');
                     document.getElementById('popupMetaText').innerHTML = `File: <strong>${msg.name}</strong> (${(msg.size/(1024*1024)).toFixed(2)} MB)`;
                     
-                    // Show Popup cleanly
                     const popup = document.getElementById('incomingRequestPopup');
                     popup.classList.remove('-translate-y-40', 'opacity-0', 'pointer-events-none');
                     popup.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
@@ -428,12 +553,11 @@
         }
 
         function acceptFileDownloadStream() {
-            closeInboundPopup(); // FIX: Clear the popup display layer immediately on accept execution click
+            closeInboundPopup();
             timeStart = performance.now();
             networkConnection.send(JSON.stringify({ type: 'accept' }));
         }
 
-        // FIXED MODAL CLOSING PROTOCOL (No refresh requirement execution loop)
         function closeInboundPopup() {
             const popup = document.getElementById('incomingRequestPopup');
             popup.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
