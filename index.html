@@ -6,14 +6,6 @@
     <title>ZapShare Ultra - Pro Core</title>
     <meta name="theme-color" content="#2563eb">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        // Inline script to prevent theme flash on load
-        if (localStorage.getItem('appTheme') === 'light') {
-            document.documentElement.classList.remove('dark');
-        } else {
-            document.documentElement.classList.add('dark');
-        }
-    </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -30,25 +22,25 @@
         #reader video { border-radius: 1rem; object-fit: cover; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between transition-colors duration-200">
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between">
 
-    <header class="bg-white dark:bg-slate-800 p-4 shadow-lg flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
+    <header class="bg-slate-800 p-4 shadow-lg flex justify-between items-center border-b border-slate-700">
         <div class="flex items-center gap-2">
-            <i data-lucide="zap" class="text-amber-500 fill-amber-500 w-6 h-6"></i>
-            <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">ZapShare Ultra</h1>
+            <i data-lucide="zap" class="text-amber-400 fill-amber-400 w-6 h-6"></i>
+            <h1 class="text-xl font-bold tracking-tight text-white">ZapShare Ultra</h1>
         </div>
-        <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 text-xs px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center gap-1.5 bg-slate-950 text-xs px-3 py-1 rounded-full border border-slate-700">
             <span class="w-2 h-2 rounded-full bg-amber-500" id="statusDot"></span>
-            <span id="myUsernameDisplay" class="text-slate-600 dark:text-slate-300">Connecting...</span>
+            <span id="myUsernameDisplay" class="text-slate-300">Connecting Engine...</span>
         </div>
     </header>
 
     <main class="flex-1 overflow-y-auto p-4 max-w-md mx-auto w-full pb-24">
         
         <section id="homeTab" class="tab-content active space-y-4">
-            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 space-y-4 text-center">
-                <h2 class="text-lg font-bold flex items-center gap-2 justify-center"><i data-lucide="smartphone-charging" class="text-blue-500"></i> Local Peer Link</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">One phone taps Send (shows clean QR), the other phone scans it.</p>
+            <div class="bg-slate-800 p-5 rounded-2xl shadow-xl border border-slate-700 space-y-4 text-center">
+                <h2 class="text-lg font-bold flex items-center gap-2 justify-center text-white"><i data-lucide="smartphone-charging" class="text-blue-400"></i> Local Peer Link</h2>
+                <p class="text-xs text-slate-400">One phone taps Send (shows clean QR), the other phone scans it.</p>
                 
                 <div class="grid grid-cols-2 gap-4 pt-2">
                     <button id="btnZapSend" class="bg-blue-600 hover:bg-blue-700 py-4 px-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2 text-white transition active:scale-95">
@@ -59,54 +51,54 @@
                     </button>
                 </div>
 
-                <div id="qrContainerWrapper" class="hidden bg-slate-100 dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-                    <p class="text-xs text-amber-600 dark:text-amber-400 font-medium">Scan this high-visibility code:</p>
+                <div id="qrContainerWrapper" class="hidden bg-slate-950 p-6 rounded-xl border border-slate-700 space-y-3">
+                    <p class="text-xs text-amber-400 font-medium">Scan this high-visibility code:</p>
                     <div id="qrcode" class="bg-white p-4 rounded-xl inline-block mx-auto"></div>
-                    <div class="text-sm font-mono tracking-widest text-slate-500 dark:text-slate-400 mt-2">ROOM CODE: <span id="fallbackCodeText" class="text-blue-600 dark:text-blue-400 font-bold">----</span></div>
+                    <div class="text-sm font-mono tracking-widest text-slate-400 mt-2">ROOM CODE: <span id="fallbackCodeText" class="text-blue-400 font-bold">----</span></div>
                 </div>
 
-                <div id="scannerContainerWrapper" class="hidden bg-slate-100 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                <div id="scannerContainerWrapper" class="hidden bg-slate-950 p-3 rounded-xl border border-slate-700 space-y-2">
                     <div id="reader" class="w-full overflow-hidden rounded-xl"></div>
                     <button id="btnStopScanner" class="w-full bg-rose-600 text-white text-xs font-bold py-2 rounded-lg">Cancel Scanner</button>
                 </div>
 
-                <div id="fallbackBridge" class="pt-2 border-t border-slate-200 dark:border-slate-700 text-left">
-                    <label class="block text-[10px] text-slate-500 dark:text-slate-400">Can't use camera? Type Room Code here:</label>
+                <div id="fallbackBridge" class="pt-2 border-t border-slate-700 text-left">
+                    <label class="block text-[10px] text-slate-400">Can't use camera? Type Room Code here:</label>
                     <div class="flex gap-2 mt-1">
-                        <input id="inputRoomToken" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Example: 5829" class="flex-1 bg-slate-50 dark:bg-slate-900 text-sm font-mono rounded-xl p-2.5 border border-slate-200 dark:border-slate-700 text-center uppercase tracking-widest text-slate-900 dark:text-slate-100">
+                        <input id="inputRoomToken" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Example: 5829" class="flex-1 bg-slate-900 text-sm font-mono rounded-xl p-2.5 border border-slate-700 text-center uppercase tracking-widest text-slate-100">
                         <button id="btnManualConnect" class="bg-blue-600 px-4 rounded-xl text-xs font-bold text-white">Link</button>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                <h3 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Network Status</h3>
-                <div id="connectedDevicesList" class="text-sm text-slate-400 dark:text-slate-500 py-2 flex items-center justify-center gap-2">
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Network Status</h3>
+                <div id="connectedDevicesList" class="text-sm text-slate-500 py-2 flex items-center justify-center gap-2">
                     <i data-lucide="unplug" class="w-5 h-5"></i> Unpaired (Waiting)
                 </div>
             </div>
         </section>
 
         <section id="sendTab" class="tab-content space-y-4">
-            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-center relative overflow-hidden">
+            <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 text-center relative overflow-hidden">
                 <div id="airplaneContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center hidden">
-                    <i data-lucide="send" id="airplaneIcon" class="w-16 h-16 text-blue-500 dark:text-blue-400"></i>
+                    <i data-lucide="send" id="airplaneIcon" class="w-16 h-16 text-blue-400"></i>
                 </div>
                 
-                <h2 class="text-lg font-bold mb-3">Choose Transfers</h2>
-                <div id="dropZone" class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-10 hover:border-blue-500 bg-slate-50 dark:bg-slate-900/40 cursor-pointer">
+                <h2 class="text-lg font-bold mb-3 text-white">Choose Transfers</h2>
+                <div id="dropZone" class="border-2 border-dashed border-slate-600 rounded-xl p-10 hover:border-blue-500 bg-slate-900/40 cursor-pointer">
                     <input type="file" id="fileInput" class="hidden">
-                    <i data-lucide="paperclip" class="w-12 h-12 text-slate-400 dark:text-slate-500 mx-auto mb-2"></i>
-                    <p class="text-sm font-bold">Select File to Send</p>
+                    <i data-lucide="paperclip" class="w-12 h-12 text-slate-500 mx-auto mb-2"></i>
+                    <p class="text-sm font-bold text-slate-300">Select File to Send</p>
                 </div>
 
-                <div id="sendProgressWrapper" class="hidden mt-4 text-left bg-slate-100 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                <div id="sendProgressWrapper" class="hidden mt-4 text-left bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5">
                     <div class="flex justify-between text-xs font-medium">
-                        <span id="sendFileName" class="truncate max-w-[200px]">Filename.apk</span>
-                        <span id="sendFileSpeed" class="text-blue-600 dark:text-blue-400">0 MB/s</span>
+                        <span id="sendFileName" class="truncate max-w-[200px] text-white">Filename.apk</span>
+                        <span id="sendFileSpeed" class="text-blue-400">0 MB/s</span>
                     </div>
-                    <div class="w-full bg-slate-300 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                        <div id="sendFileProgress" class="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
+                    <div class="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                        <div id="sendFileProgress" class="bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
                     <div class="flex justify-between text-[10px] text-slate-500">
                         <span id="sendFileSize">0 MB</span>
@@ -114,25 +106,25 @@
                     </div>
                 </div>
 
-                <div id="sendSuccessState" class="hidden mt-4 p-4 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-500/40 rounded-xl flex flex-col items-center gap-1.5">
-                    <i data-lucide="check-circle" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
-                    <p class="text-sm font-bold text-slate-900 dark:text-white">Transfer Completed!</p>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400">The file dropped into the receiver device cache pipeline successfully.</p>
+                <div id="sendSuccessState" class="hidden mt-4 p-4 bg-blue-950/60 border border-blue-500/40 rounded-xl flex flex-col items-center gap-1.5">
+                    <i data-lucide="check-circle" class="w-8 h-8 text-blue-400"></i>
+                    <p class="text-sm font-bold text-white">Transfer Completed!</p>
+                    <p class="text-[11px] text-slate-400">The file dropped into the receiver device cache pipeline successfully.</p>
                 </div>
             </div>
         </section>
 
         <section id="receiveTab" class="tab-content space-y-4">
-            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4">
-                <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="download" class="text-emerald-600 dark:text-emerald-400"></i> Transfer Stream</h2>
+            <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
+                <h2 class="text-lg font-bold flex items-center gap-2 text-white"><i data-lucide="download" class="text-emerald-400"></i> Transfer Stream</h2>
                 
-                <div id="receiveProgressWrapper" class="hidden text-left bg-slate-100 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                <div id="receiveProgressWrapper" class="hidden text-left bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5">
                     <div class="flex justify-between text-xs font-medium">
-                        <span id="receiveFileName" class="truncate max-w-[200px]">Inbound stream...</span>
-                        <span id="receiveFileSpeed" class="text-emerald-600 dark:text-emerald-400">0 MB/s</span>
+                        <span id="receiveFileName" class="truncate max-w-[200px] text-white">Inbound stream...</span>
+                        <span id="receiveFileSpeed" class="text-emerald-400">0 MB/s</span>
                     </div>
-                    <div class="w-full bg-slate-300 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                        <div id="receiveFileProgress" class="bg-emerald-600 dark:bg-emerald-500 h-2.5 rounded-full" style="width: 0%"></div>
+                    <div class="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                        <div id="receiveFileProgress" class="bg-emerald-500 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
                     <div class="flex justify-between text-[10px] text-slate-500">
                         <span id="receiveFileSize">0 MB</span>
@@ -140,86 +132,75 @@
                     </div>
                 </div>
 
-                <div id="receiveSuccessState" class="hidden p-5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/40 rounded-xl flex flex-col items-center text-center gap-2">
-                    <i data-lucide="sparkles" class="w-10 h-10 text-emerald-600 dark:text-emerald-400"></i>
-                    <p class="text-sm font-bold text-slate-900 dark:text-white">Download Triggered!</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">File assembled. Check your device notifications or downloads folder now.</p>
+                <div id="receiveSuccessState" class="hidden p-5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl flex flex-col items-center text-center gap-2">
+                    <i data-lucide="sparkles" class="w-10 h-10 text-emerald-400"></i>
+                    <p class="text-sm font-bold text-white">Download Triggered!</p>
+                    <p class="text-xs text-slate-400">File assembled. Check your device notifications or downloads folder now.</p>
                 </div>
 
-                <div id="receiveStatusPlaceholder" class="text-center py-10 text-sm text-slate-400 dark:text-slate-500 flex flex-col items-center gap-2">
-                    <i data-lucide="radar" class="w-10 h-10 text-slate-400 dark:text-slate-600 animate-spin"></i>
+                <div id="receiveStatusPlaceholder" class="text-center py-10 text-sm text-slate-500 flex flex-col items-center gap-2">
+                    <i data-lucide="radar" class="w-10 h-10 text-slate-600 animate-spin"></i>
                     Ready and waiting for data streams...
                 </div>
             </div>
         </section>
 
         <section id="settingsTab" class="tab-content space-y-4">
-            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4">
-                <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="sliders" class="text-blue-500 dark:text-blue-400"></i> Settings & Preferences</h2>
+            <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
+                <h2 class="text-lg font-bold flex items-center gap-2 text-white"><i data-lucide="sliders" class="text-blue-400"></i> System Preferences</h2>
                 
-                <div class="flex justify-between items-center p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-slate-900 dark:text-white">Interface Theme</span>
-                        <span class="text-[10px] text-slate-500 dark:text-slate-400">Switch between light and dark visual aesthetics</span>
-                    </div>
-                    <button id="btnThemeToggle" class="bg-blue-600 hover:bg-blue-700 p-2 rounded-xl text-white flex items-center gap-1 text-xs font-semibold px-3 transition active:scale-95 shadow">
-                        <i data-lucide="sun-moon" class="w-4 h-4"></i>
-                        <span id="themeToggleText">Toggle Mode</span>
-                    </button>
-                </div>
-
                 <div class="pt-2">
-                    <h3 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">About Application</h3>
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">About Application</h3>
                     <div class="space-y-2 text-xs">
-                        <div class="flex justify-between p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                            <span class="text-slate-500 dark:text-slate-400">App Name</span>
-                            <span class="font-bold text-slate-900 dark:text-white">ZapShare Ultra</span>
+                        <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
+                            <span class="text-slate-400">App Name</span>
+                            <span class="font-bold text-white">ZapShare Ultra</span>
                         </div>
-                        <div class="flex justify-between p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                            <span class="text-slate-500 dark:text-slate-400">Core Framework Version</span>
-                            <span class="font-mono text-blue-600 dark:text-blue-400 font-bold">v2.3.0 (Stable)</span>
+                        <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
+                            <span class="text-slate-400">Core Framework Version</span>
+                            <span class="font-mono text-blue-400 font-bold">v2.3.0 (Stable)</span>
                         </div>
-                        <div class="flex justify-between p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                            <span class="text-slate-500 dark:text-slate-400">Protocol Pipeline</span>
-                            <span class="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">WebRTC Secure DataChannel</span>
+                        <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
+                            <span class="text-slate-400">Protocol Pipeline</span>
+                            <span class="font-mono text-emerald-400 font-semibold">WebRTC Secure DataChannel</span>
                         </div>
-                        <div class="flex justify-between p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                            <span class="text-slate-500 dark:text-slate-400">Encryption Status</span>
-                            <span class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> TLS Active</span>
+                        <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
+                            <span class="text-slate-400">Encryption Status</span>
+                            <span class="text-emerald-400 font-semibold flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> TLS Active</span>
                         </div>
                     </div>
                 </div>
                 
-                <p class="text-[10px] text-slate-400 text-center pt-2">Powered by PeerJS Engine Mesh Infrastructure</p>
+                <p class="text-[10px] text-slate-500 text-center pt-2">Powered by PeerJS Engine Mesh Infrastructure</p>
             </div>
         </section>
 
     </main>
 
-    <div id="incomingRequestPopup" class="fixed top-20 left-4 right-4 bg-white dark:bg-slate-950 border-2 border-emerald-500 p-4 rounded-2xl shadow-2xl z-50 transform -translate-y-40 opacity-0 transition-all duration-300 pointer-events-none max-w-sm mx-auto">
+    <div id="incomingRequestPopup" class="fixed top-20 left-4 right-4 bg-slate-950 border-2 border-emerald-500 p-4 rounded-2xl shadow-2xl z-50 transform -translate-y-40 opacity-0 transition-all duration-300 pointer-events-none max-w-sm mx-auto">
         <div class="space-y-3">
-            <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="download-cloud" class="text-emerald-500 dark:text-emerald-400"></i> File Incoming!</h4>
-            <p id="popupMetaText" class="text-xs text-slate-600 dark:text-slate-300">Remote peer wants to send a file.</p>
+            <h4 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="download-cloud" class="text-emerald-400"></i> File Incoming!</h4>
+            <p id="popupMetaText" class="text-xs text-slate-300">Remote peer wants to send a file.</p>
             <div class="flex gap-2">
                 <button id="btnAcceptStream" class="flex-1 bg-emerald-600 text-white text-xs font-bold py-2 rounded-xl">Accept</button>
-                <button id="btnRejectStream" class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold py-2 px-4 rounded-xl">Reject</button>
+                <button id="btnRejectStream" class="bg-slate-800 text-slate-400 text-xs font-bold py-2 px-4 rounded-xl">Reject</button>
             </div>
         </div>
     </div>
 
-    <div id="toastNotification" class="fixed bottom-24 left-4 right-4 max-w-xs mx-auto bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 p-3 rounded-xl shadow-2xl text-xs font-medium text-center z-50 pointer-events-none opacity-0 transform translate-y-2 transition-all duration-300"></div>
+    <div id="toastNotification" class="fixed bottom-24 left-4 right-4 max-w-xs mx-auto bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs font-medium text-center z-50 pointer-events-none opacity-0 transform translate-y-2 transition-all duration-300"></div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-2 px-4 flex justify-around items-center z-10 max-w-md mx-auto rounded-t-2xl shadow-2xl">
-        <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center text-blue-600 dark:text-blue-500" data-tab="home">
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 py-2 px-4 flex justify-around items-center z-10 max-w-md mx-auto rounded-t-2xl shadow-2xl">
+        <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center text-blue-500" data-tab="home">
             <i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Home</span>
         </button>
-        <button onclick="switchTab('send')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500" data-tab="send">
+        <button onclick="switchTab('send')" class="nav-btn flex flex-col items-center text-slate-400" data-tab="send">
             <i data-lucide="send" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Send</span>
         </button>
-        <button onclick="switchTab('receive')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500" data-tab="receive">
+        <button onclick="switchTab('receive')" class="nav-btn flex flex-col items-center text-slate-400" data-tab="receive">
             <i data-lucide="download" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Receive</span>
         </button>
-        <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500" data-tab="settings">
+        <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center text-slate-400" data-tab="settings">
             <i data-lucide="settings" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Settings</span>
         </button>
     </nav>
@@ -237,44 +218,14 @@
             lucide.createIcons();
             initializePeerCloudEngine();
             bindInterfaceEvents();
-            initThemeConfiguration();
         });
-
-        // Theme management infrastructure logic module
-        function initThemeConfiguration() {
-            const currentTheme = localStorage.getItem('appTheme') || 'dark';
-            updateThemeLabel(currentTheme);
-
-            document.getElementById('btnThemeToggle').addEventListener('click', () => {
-                const isDark = document.documentElement.classList.contains('dark');
-                if (isDark) {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('appTheme', 'light');
-                    updateThemeLabel('light');
-                } else {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('appTheme', 'dark');
-                    updateThemeLabel('dark');
-                }
-            });
-        }
-
-        function updateThemeLabel(theme) {
-            const textEl = document.getElementById('themeToggleText');
-            if (theme === 'light') {
-                textEl.innerText = "Light Mode";
-            } else {
-                textEl.innerText = "Dark Mode";
-            }
-        }
 
         function showMessage(msg, isSuccess = true) {
             const toast = document.getElementById('toastNotification');
             toast.innerText = msg;
-            toast.classList.remove('border-emerald-500', 'border-rose-500', 'text-emerald-600', 'text-rose-500', 'dark:text-emerald-400', 'dark:text-rose-400');
+            toast.classList.remove('border-emerald-500', 'border-rose-500', 'text-rose-500', 'text-emerald-400');
             toast.classList.add(isSuccess ? 'border-emerald-500' : 'border-rose-500');
-            toast.classList.add(isSuccess ? 'text-emerald-600' : 'text-rose-500');
-            if (isSuccess) toast.classList.add('dark:text-emerald-400');
+            toast.classList.add(isSuccess ? 'text-emerald-400' : 'text-rose-400');
             
             toast.classList.remove('opacity-0', 'translate-y-2');
             toast.classList.add('opacity-100', 'translate-y-0');
@@ -326,12 +277,12 @@
         function switchTab(id) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => { 
-                el.classList.remove('text-blue-600', 'dark:text-blue-500'); 
-                el.classList.add('text-slate-400', 'dark:text-slate-500'); 
+                el.classList.remove('text-blue-500'); 
+                el.classList.add('text-slate-400'); 
             });
             document.getElementById(`${id}Tab`).classList.add('active');
-            document.querySelector(`[data-tab="${id}"]`).classList.remove('text-slate-400', 'dark:text-slate-500');
-            document.querySelector(`[data-tab="${id}"]`).classList.add('text-blue-600', 'dark:text-blue-500');
+            document.querySelector(`[data-tab="${id}"]`).classList.remove('text-slate-400');
+            document.querySelector(`[data-tab="${id}"]`).classList.add('text-blue-500');
         }
 
         function bindInterfaceEvents() {
@@ -357,6 +308,8 @@
             
             document.getElementById('dropZone').addEventListener('click', () => document.getElementById('fileInput').click());
             document.getElementById('fileInput').addEventListener('change', e => { if(e.target.files.length) stageOutboundFile(e.target.files[0]); });
+            
+            // FIXED INTERACTION BINDINGS FOR MODAL FLOW CONTROL
             document.getElementById('btnAcceptStream').addEventListener('click', acceptFileDownloadStream);
             document.getElementById('btnRejectStream').addEventListener('click', closeInboundPopup);
         }
@@ -397,7 +350,7 @@
 
         function setupConnectionDataListeners() {
             networkConnection.on('open', () => {
-                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Linked & Secure!</span>`;
+                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-emerald-400 font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Linked & Secure!</span>`;
                 lucide.createIcons();
                 document.getElementById('qrContainerWrapper').classList.add('hidden');
                 showMessage("Device link pipeline verified!", true);
@@ -410,7 +363,7 @@
             });
 
             networkConnection.on('close', () => {
-                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-slate-400 dark:text-slate-500"><i data-lucide="unplug"></i> Disconnected</span>`;
+                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-slate-500"><i data-lucide="unplug"></i> Disconnected</span>`;
                 lucide.createIcons();
                 showMessage("Connection terminated by peer.", false);
             });
@@ -439,6 +392,8 @@
                     receivedChunks = [];
                     document.getElementById('receiveSuccessState').classList.add('hidden');
                     document.getElementById('popupMetaText').innerHTML = `File: <strong>${msg.name}</strong> (${(msg.size/(1024*1024)).toFixed(2)} MB)`;
+                    
+                    // Show Popup cleanly
                     const popup = document.getElementById('incomingRequestPopup');
                     popup.classList.remove('-translate-y-40', 'opacity-0', 'pointer-events-none');
                     popup.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
@@ -472,13 +427,15 @@
         }
 
         function acceptFileDownloadStream() {
-            closeInboundPopup();
+            closeInboundPopup(); // FIX: Clear the popup display layer immediately on accept execution click
             timeStart = performance.now();
             networkConnection.send(JSON.stringify({ type: 'accept' }));
         }
 
+        // FIXED MODAL CLOSING PROTOCOL (No refresh requirement execution loop)
         function closeInboundPopup() {
             const popup = document.getElementById('incomingRequestPopup');
+            popup.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
             popup.classList.add('-translate-y-40', 'opacity-0', 'pointer-events-none');
         }
 
