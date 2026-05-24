@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZapShare Ultra - Pro Core</title>
-   <link rel="icon" type="image/png" href="favicon.png">
     <meta name="theme-color" content="#2563eb">
+    <link rel="icon" type="image/png" href="favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -21,6 +21,12 @@
         }
         .anim-fly { animation: flyAway 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
         #reader video { border-radius: 1rem; object-fit: cover; }
+        
+        @media (max-width: 1023px) {
+            main {
+                padding-bottom: 140px !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between">
@@ -36,147 +42,185 @@
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-4 max-w-md mx-auto w-full pb-24">
+    <main class="flex-1 overflow-y-auto p-4 max-w-md lg:max-w-4xl mx-auto w-full pb-32 lg:flex lg:gap-4 lg:items-start">
         
-        <section id="homeTab" class="tab-content active space-y-4">
-            <div class="bg-slate-800 p-5 rounded-2xl shadow-xl border border-slate-700 space-y-4 text-center">
-                <h2 class="text-lg font-bold flex items-center gap-2 justify-center text-white"><i data-lucide="smartphone-charging" class="text-blue-400"></i> Local Peer Link</h2>
-                <p class="text-xs text-slate-400">One phone taps Send (shows clean QR), the other phone scans it.</p>
-                
-                <div class="grid grid-cols-2 gap-4 pt-2">
-                    <button id="btnZapSend" class="bg-blue-600 hover:bg-blue-700 py-4 px-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2 text-white transition active:scale-95">
-                        <i data-lucide="log-out" class="w-8 h-8 rotate-[-45deg]"></i> Send File
+        <div class="flex-1 w-full space-y-4">
+            <section id="homeTab" class="tab-content active space-y-4">
+                <div class="bg-slate-800 p-5 rounded-2xl shadow-xl border border-slate-700 space-y-4 text-center">
+                    <h2 class="text-lg font-bold flex items-center gap-2 justify-center text-white"><i data-lucide="smartphone-charging" class="text-blue-400"></i> Local Peer Link</h2>
+                    <p class="text-xs text-slate-400">One phone taps Send (shows clean QR), the other phone scans it.</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <button id="btnZapSend" class="bg-blue-600 hover:bg-blue-700 py-4 px-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2 text-white transition active:scale-95">
+                            <i data-lucide="log-out" class="w-8 h-8 rotate-[-45deg]"></i> Send File
+                        </button>
+                        <button id="btnZapReceive" class="bg-emerald-600 hover:bg-emerald-700 py-4 px-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2 text-white transition active:scale-95">
+                            <i data-lucide="qr-code" class="w-8 h-8"></i> Scan QR
+                        </button>
+                    </div>
+
+                    <div id="qrContainerWrapper" class="hidden bg-slate-950 p-6 rounded-xl border border-slate-700 space-y-3">
+                        <p class="text-xs text-amber-400 font-medium">Scan this high-visibility code:</p>
+                        <div id="qrcode" class="bg-white p-4 rounded-xl inline-block mx-auto"></div>
+                        <div class="text-sm font-mono tracking-widest text-slate-400 mt-2">ROOM CODE: <span id="fallbackCodeText" class="text-blue-400 font-bold">----</span></div>
+                    </div>
+
+                    <div id="scannerContainerWrapper" class="hidden bg-slate-950 p-3 rounded-xl border border-slate-700 space-y-2">
+                        <div id="reader" class="w-full overflow-hidden rounded-xl"></div>
+                        <button id="btnStopScanner" class="w-full bg-rose-600 text-white text-xs font-bold py-2 rounded-lg">Cancel Scanner</button>
+                    </div>
+
+                    <div id="fallbackBridge" class="pt-2 border-t border-slate-700 text-left">
+                        <label class="block text-[10px] text-slate-400">Can't use camera? Type Room Code here:</label>
+                        <div class="flex gap-2 mt-1">
+                            <input id="inputRoomToken" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Example: 5829" class="flex-1 bg-slate-900 text-sm font-mono rounded-xl p-2.5 border border-slate-700 text-center uppercase tracking-widest text-slate-100">
+                            <button id="btnManualConnect" class="bg-blue-600 px-4 rounded-xl text-xs font-bold text-white">Link</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Network Status</h3>
+                    <div id="connectedDevicesList" class="text-sm text-slate-500 py-2 flex items-center justify-center gap-2">
+                        <i data-lucide="unplug" class="w-5 h-5"></i> Unpaired (Waiting)
+                    </div>
+                </div>
+            </section>
+
+            <section id="sendTab" class="tab-content space-y-4">
+                <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 text-center relative overflow-hidden space-y-4">
+                    <div id="airplaneContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center hidden">
+                        <i data-lucide="send" id="airplaneIcon" class="w-16 h-16 text-blue-400"></i>
+                    </div>
+                    
+                    <h2 class="text-lg font-bold text-white text-left flex items-center gap-2"><i data-lucide="files" class="text-blue-400"></i> Share Files</h2>
+                    <div id="dropZone" class="border-2 border-dashed border-slate-600 rounded-xl p-10 hover:border-blue-500 bg-slate-900/40 cursor-pointer">
+                        <input type="file" id="fileInput" class="hidden">
+                        <i data-lucide="paperclip" class="w-12 h-12 text-slate-500 mx-auto mb-2"></i>
+                        <p class="text-sm font-bold text-slate-300">Select File to Send</p>
+                    </div>
+
+                    <div id="sendProgressWrapper" class="hidden mt-4 text-left bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span id="sendFileName" class="truncate max-w-[200px] text-white">Filename.apk</span>
+                            <span id="sendFileSpeed" class="text-blue-400">0 MB/s</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                            <div id="sendFileProgress" class="bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span id="sendFileSize">0 MB</span>
+                            <span id="sendFilePercent">0%</span>
+                        </div>
+                    </div>
+
+                    <div id="sendSuccessState" class="hidden mt-4 p-4 bg-blue-950/60 border border-blue-500/40 rounded-xl flex flex-col items-center gap-1.5">
+                        <i data-lucide="check-circle" class="w-8 h-8 text-blue-400"></i>
+                        <p class="text-sm font-bold text-white">Transfer Completed!</p>
+                        <p class="text-[11px] text-slate-400">The file dropped into the receiver device cache pipeline successfully.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-3">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i data-lucide="copy" class="text-blue-400"></i> Clipboard & Text Share</h2>
+                    <p class="text-[11px] text-slate-400">Paste links, long messages, or copy codes to beam them directly to the other device screen.</p>
+                    
+                    <div class="space-y-2">
+                        <textarea id="textShareInput" rows="3" placeholder="Type or paste any text/link here to share instantly..." class="w-full bg-slate-900 text-sm rounded-xl p-3 border border-slate-700 text-slate-100 focus:outline-none focus:border-blue-500 placeholder-slate-600 resize-none"></textarea>
+                        <button id="btnSendText" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition flex items-center justify-center gap-1.5 active:scale-95 shadow-md">
+                            <i data-lucide="clipboard-copy" class="w-4 h-4"></i> Send Text Data
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="receiveTab" class="tab-content space-y-4">
+                <div id="receivedTextCard" class="hidden bg-slate-800 p-5 rounded-2xl border-2 border-blue-500 space-y-3 shadow-2xl">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-1.5"><i data-lucide="message-square-text" class="text-blue-400"></i> Received Text Data</h3>
+                        <span class="text-[9px] bg-blue-950 text-blue-400 px-2 py-0.5 rounded-full font-mono border border-blue-900">New Sync</span>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs font-mono text-slate-200 break-all max-h-40 overflow-y-auto select-all whitespace-pre-wrap" id="receivedTextContent"></div>
+                    <button id="btnCopyReceivedText" class="w-full bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy to Clipboard
                     </button>
-                    <button id="btnZapReceive" class="bg-emerald-600 hover:bg-emerald-700 py-4 px-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2 text-white transition active:scale-95">
-                        <i data-lucide="qr-code" class="w-8 h-8"></i> Scan QR
-                    </button>
                 </div>
 
-                <div id="qrContainerWrapper" class="hidden bg-slate-950 p-6 rounded-xl border border-slate-700 space-y-3">
-                    <p class="text-xs text-amber-400 font-medium">Scan this high-visibility code:</p>
-                    <div id="qrcode" class="bg-white p-4 rounded-xl inline-block mx-auto"></div>
-                    <div class="text-sm font-mono tracking-widest text-slate-400 mt-2">ROOM CODE: <span id="fallbackCodeText" class="text-blue-400 font-bold">----</span></div>
-                </div>
-
-                <div id="scannerContainerWrapper" class="hidden bg-slate-950 p-3 rounded-xl border border-slate-700 space-y-2">
-                    <div id="reader" class="w-full overflow-hidden rounded-xl"></div>
-                    <button id="btnStopScanner" class="w-full bg-rose-600 text-white text-xs font-bold py-2 rounded-lg">Cancel Scanner</button>
-                </div>
-
-                <div id="fallbackBridge" class="pt-2 border-t border-slate-700 text-left">
-                    <label class="block text-[10px] text-slate-400">Can't use camera? Type Room Code here:</label>
-                    <div class="flex gap-2 mt-1">
-                        <input id="inputRoomToken" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Example: 5829" class="flex-1 bg-slate-900 text-sm font-mono rounded-xl p-2.5 border border-slate-700 text-center uppercase tracking-widest text-slate-100">
-                        <button id="btnManualConnect" class="bg-blue-600 px-4 rounded-xl text-xs font-bold text-white">Link</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Network Status</h3>
-                <div id="connectedDevicesList" class="text-sm text-slate-500 py-2 flex items-center justify-center gap-2">
-                    <i data-lucide="unplug" class="w-5 h-5"></i> Unpaired (Waiting)
-                </div>
-            </div>
-        </section>
-
-        <section id="sendTab" class="tab-content space-y-4">
-            <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 text-center relative overflow-hidden">
-                <div id="airplaneContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center hidden">
-                    <i data-lucide="send" id="airplaneIcon" class="w-16 h-16 text-blue-400"></i>
-                </div>
-                
-                <h2 class="text-lg font-bold mb-3 text-white">Choose Transfers</h2>
-                <div id="dropZone" class="border-2 border-dashed border-slate-600 rounded-xl p-10 hover:border-blue-500 bg-slate-900/40 cursor-pointer">
-                    <input type="file" id="fileInput" class="hidden">
-                    <i data-lucide="paperclip" class="w-12 h-12 text-slate-500 mx-auto mb-2"></i>
-                    <p class="text-sm font-bold text-slate-300">Select File to Send</p>
-                </div>
-
-                <div id="sendProgressWrapper" class="hidden mt-4 text-left bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5">
-                    <div class="flex justify-between text-xs font-medium">
-                        <span id="sendFileName" class="truncate max-w-[200px] text-white">Filename.apk</span>
-                        <span id="sendFileSpeed" class="text-blue-400">0 MB/s</span>
-                    </div>
-                    <div class="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                        <div id="sendFileProgress" class="bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-500">
-                        <span id="sendFileSize">0 MB</span>
-                        <span id="sendFilePercent">0%</span>
-                    </div>
-                </div>
-
-                <div id="sendSuccessState" class="hidden mt-4 p-4 bg-blue-950/60 border border-blue-500/40 rounded-xl flex flex-col items-center gap-1.5">
-                    <i data-lucide="check-circle" class="w-8 h-8 text-blue-400"></i>
-                    <p class="text-sm font-bold text-white">Transfer Completed!</p>
-                    <p class="text-[11px] text-slate-400">The file dropped into the receiver device cache pipeline successfully.</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="receiveTab" class="tab-content space-y-4">
-            <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="text-lg font-bold flex items-center gap-2 text-white"><i data-lucide="download" class="text-emerald-400"></i> Transfer Stream</h2>
-                
-                <div id="receiveProgressWrapper" class="hidden text-left bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5">
-                    <div class="flex justify-between text-xs font-medium">
-                        <span id="receiveFileName" class="truncate max-w-[200px] text-white">Inbound stream...</span>
-                        <span id="receiveFileSpeed" class="text-emerald-400">0 MB/s</span>
-                    </div>
-                    <div class="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                        <div id="receiveFileProgress" class="bg-emerald-500 h-2.5 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-500">
-                        <span id="receiveFileSize">0 MB</span>
-                        <span id="receiveFilePercent">0%</span>
-                    </div>
-                </div>
-
-                <div id="receiveSuccessState" class="hidden p-5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl flex flex-col items-center text-center gap-2">
-                    <i data-lucide="sparkles" class="w-10 h-10 text-emerald-400"></i>
-                    <p class="text-sm font-bold text-white">Download Triggered!</p>
-                    <p class="text-xs text-slate-400">File assembled. Check your device notifications or downloads folder now.</p>
-                </div>
-
-                <div id="receiveStatusPlaceholder" class="text-center py-10 text-sm text-slate-500 flex flex-col items-center gap-2">
-                    <i data-lucide="radar" class="w-10 h-10 text-slate-600 animate-spin"></i>
-                    Ready and waiting for data streams...
-                </div>
-            </div>
-        </section>
-
-        <section id="settingsTab" class="tab-content space-y-4">
-            <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="text-lg font-bold flex items-center gap-2 text-white"><i data-lucide="sliders" class="text-blue-400"></i> System Preferences</h2>
-                
-                <div class="pt-2">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">About Application</h3>
-                    <div class="space-y-2 text-xs">
-                        <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
-                            <span class="text-slate-400">App Name</span>
-                            <span class="font-bold text-white">ZapShare Ultra</span>
+                <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-white"><i data-lucide="download" class="text-emerald-400"></i> Transfer Stream</h2>
+                    
+                    <div id="receiveProgressWrapper" class="hidden text-left bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span id="receiveFileName" class="truncate max-w-[200px] text-white">Inbound stream...</span>
+                            <span id="receiveFileSpeed" class="text-emerald-400">0 MB/s</span>
                         </div>
-                        <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
-                            <span class="text-slate-400">Core Framework Version</span>
-                            <span class="font-mono text-blue-400 font-bold">v2.3.0 (Stable)</span>
+                        <div class="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                            <div id="receiveFileProgress" class="bg-emerald-500 h-2.5 rounded-full" style="width: 0%"></div>
                         </div>
-                        <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
-                            <span class="text-slate-400">Protocol Pipeline</span>
-                            <span class="font-mono text-emerald-400 font-semibold">WebRTC Secure DataChannel</span>
-                        </div>
-                        <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
-                            <span class="text-slate-400">Encryption Status</span>
-                            <span class="text-emerald-400 font-semibold flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> TLS Active</span>
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span id="receiveFileSize">0 MB</span>
+                            <span id="receiveFilePercent">0%</span>
                         </div>
                     </div>
-                </div>
-                
-                <p class="text-[10px] text-slate-500 text-center pt-2">Powered by PeerJS Engine Mesh Infrastructure</p>
-            </div>
-        </section>
 
+                    <div id="receiveSuccessState" class="hidden p-5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl flex flex-col items-center text-center gap-2">
+                        <i data-lucide="sparkles" class="w-10 h-10 text-emerald-400"></i>
+                        <p class="text-sm font-bold text-white">Download Triggered!</p>
+                        <p class="text-xs text-slate-400">File assembled. Check your device notifications or downloads folder now.</p>
+                    </div>
+
+                    <div id="receiveStatusPlaceholder" class="text-center py-10 text-sm text-slate-500 flex flex-col items-center gap-2">
+                        <i data-lucide="radar" class="w-10 h-10 text-slate-600 animate-spin"></i>
+                        Ready and waiting for data streams...
+                    </div>
+                </div>
+            </section>
+
+            <section id="settingsTab" class="tab-content space-y-4">
+                <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-white"><i data-lucide="sliders" class="text-blue-400"></i> System Preferences</h2>
+                    
+                    <div class="pt-2">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">About Application</h3>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
+                                <span class="text-slate-400">App Name</span>
+                                <span class="font-bold text-white">ZapShare Ultra</span>
+                            </div>
+                            <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
+                                <span class="text-slate-400">Core Framework Version</span>
+                                <span class="font-mono text-blue-400 font-bold">v2.3.0 (Stable)</span>
+                            </div>
+                            <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
+                                <span class="text-slate-400">Protocol Pipeline</span>
+                                <span class="font-mono text-emerald-400 font-semibold">WebRTC Secure DataChannel</span>
+                            </div>
+                            <div class="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-700/60">
+                                <span class="text-slate-400">Encryption Status</span>
+                                <span class="text-emerald-400 font-semibold flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> TLS Active</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-[10px] text-slate-500 text-center pt-2">Powered by PeerJS Engine Mesh Infrastructure</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="hidden lg:block w-72 shrink-0 bg-slate-800 p-3 rounded-2xl border border-slate-700 text-center">
+            <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Sponsored Link</p>
+            <div class="min-h-[250px] flex items-center justify-center bg-slate-900 rounded-xl overflow-hidden">
+                </div>
+        </div>
     </main>
+
+    <div class="fixed bottom-[64px] left-0 right-0 lg:hidden bg-slate-900/90 backdrop-blur-md border-t border-slate-800 p-2 z-10">
+        <div class="max-w-md mx-auto text-center">
+            <p class="text-[9px] text-slate-500 uppercase tracking-wide mb-1">Advertisement</p>
+            <div class="min-h-[50px] flex items-center justify-center bg-slate-950 rounded-lg overflow-hidden">
+                </div>
+        </div>
+    </div>
 
     <div id="incomingRequestPopup" class="fixed top-20 left-4 right-4 bg-slate-950 border-2 border-emerald-500 p-4 rounded-2xl shadow-2xl z-50 transform -translate-y-40 opacity-0 transition-all duration-300 pointer-events-none max-w-sm mx-auto">
         <div class="space-y-3">
@@ -191,7 +235,7 @@
 
     <div id="toastNotification" class="fixed bottom-24 left-4 right-4 max-w-xs mx-auto bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs font-medium text-center z-50 pointer-events-none opacity-0 transform translate-y-2 transition-all duration-300"></div>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 py-2 px-4 flex justify-around items-center z-10 max-w-md mx-auto rounded-t-2xl shadow-2xl">
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 py-2 px-4 flex justify-around items-center z-20 max-w-md mx-auto rounded-t-2xl shadow-2xl">
         <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center text-blue-500" data-tab="home">
             <i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Home</span>
         </button>
@@ -310,9 +354,21 @@
             document.getElementById('dropZone').addEventListener('click', () => document.getElementById('fileInput').click());
             document.getElementById('fileInput').addEventListener('change', e => { if(e.target.files.length) stageOutboundFile(e.target.files[0]); });
             
-            // FIXED INTERACTION BINDINGS FOR MODAL FLOW CONTROL
             document.getElementById('btnAcceptStream').addEventListener('click', acceptFileDownloadStream);
             document.getElementById('btnRejectStream').addEventListener('click', closeInboundPopup);
+
+            // ✨ ENGINE TRIGGER: TEXT SHARE BUTTON EVENT SUBMISSION
+            document.getElementById('btnSendText').addEventListener('click', dispatchClipboardTextMessage);
+            
+            // ✨ INTERACTION TRIGGER: COPY INBOUND TEXT TO DEVICE SYSTEM CLIPBOARD
+            document.getElementById('btnCopyReceivedText').addEventListener('click', () => {
+                const txt = document.getElementById('receivedTextContent').innerText;
+                navigator.clipboard.writeText(txt).then(() => {
+                    showMessage("Copied securely to clipboard!", true);
+                }).catch(() => {
+                    showMessage("Clipboard write access blocked.", false);
+                });
+            });
         }
 
         function startReceiveScannerProtocol() {
@@ -385,16 +441,42 @@
             networkConnection.send(JSON.stringify({ type: 'meta', name: file.name, size: file.size, mime: file.type }));
         }
 
+        // ✨ PIPELINE PROCESSOR: HANDLES BOTH BINARY BUFFERS AND TEXT OBJECT ROUTING
+        function dispatchClipboardTextMessage() {
+            if(!networkConnection) return showMessage("Pair devices before transmitting text data!", false);
+            const textInputField = document.getElementById('textShareInput');
+            const rawMessage = textInputField.value.trim();
+            
+            if(!rawMessage) return showMessage("Cannot send an empty message slot.", false);
+
+            // Pack context inside JSON wrapper structure to differentiate from raw binary byte chunks
+            networkConnection.send(JSON.stringify({ type: 'textClip', content: rawMessage }));
+            
+            textInputField.value = ""; // Empty input text area box upon success configuration
+            showMessage("Text message beamed over!", true);
+        }
+
         function parseInboundPayloadMessage(payload) {
             if(typeof payload === 'string') {
                 const msg = JSON.parse(payload);
+                
+                // ROUTE A: Handle structural clipboard data
+                if(msg.type === 'textClip') {
+                    document.getElementById('receivedTextContent').innerText = msg.content;
+                    document.getElementById('receivedTextCard').classList.remove('hidden');
+                    switchTab('receive');
+                    showMessage("Inbound text clipboard message arrived!", true);
+                    if(navigator.vibrate) navigator.vibrate([80, 40, 80]);
+                    return;
+                }
+
+                // ROUTE B: Handle incoming file data meta handshake
                 if(msg.type === 'meta') {
                     expectedName = msg.name; expectedSize = msg.size; expectedMime = msg.mime;
                     receivedChunks = [];
                     document.getElementById('receiveSuccessState').classList.add('hidden');
                     document.getElementById('popupMetaText').innerHTML = `File: <strong>${msg.name}</strong> (${(msg.size/(1024*1024)).toFixed(2)} MB)`;
                     
-                    // Show Popup cleanly
                     const popup = document.getElementById('incomingRequestPopup');
                     popup.classList.remove('-translate-y-40', 'opacity-0', 'pointer-events-none');
                     popup.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
@@ -428,12 +510,11 @@
         }
 
         function acceptFileDownloadStream() {
-            closeInboundPopup(); // FIX: Clear the popup display layer immediately on accept execution click
+            closeInboundPopup();
             timeStart = performance.now();
             networkConnection.send(JSON.stringify({ type: 'accept' }));
         }
 
-        // FIXED MODAL CLOSING PROTOCOL (No refresh requirement execution loop)
         function closeInboundPopup() {
             const popup = document.getElementById('incomingRequestPopup');
             popup.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
@@ -509,8 +590,5 @@
             receivedChunks = [];
         }
     </script>
-
-    <script src="https://pl29463975.effectivecpmnetwork.com/92/67/ca/9267ca1bdd23a47b538de364185e6986.js"></script>
-
 </body>
 </html>
