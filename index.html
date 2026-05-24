@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZapShare Pro - Fast Scan</title>
+    <title>ZapShare Ultra - Fast Core</title>
     <meta name="theme-color" content="#2563eb">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -30,8 +30,8 @@
             <h1 class="text-xl font-bold tracking-tight">ZapShare Ultra</h1>
         </div>
         <div class="flex items-center gap-1.5 bg-slate-950 text-xs px-3 py-1 rounded-full border border-slate-700">
-            <span class="w-2 h-2 rounded-full bg-blue-500" id="statusDot"></span>
-            <span id="myUsernameDisplay">Connecting Cloud...</span>
+            <span class="w-2 h-2 rounded-full bg-amber-500" id="statusDot"></span>
+            <span id="myUsernameDisplay">Connecting...</span>
         </div>
     </header>
 
@@ -39,8 +39,8 @@
         
         <section id="homeTab" class="tab-content active space-y-4">
             <div class="bg-slate-800 p-5 rounded-2xl shadow-xl border border-slate-700 space-y-4 text-center">
-                <h2 class="text-lg font-bold flex items-center gap-2 justify-center"><i data-lucide="smartphone-charging" class="text-blue-400"></i> Local Instant Connect</h2>
-                <p class="text-xs text-slate-400">One phone taps Send (shows simple QR), the other taps Scan (reads QR).</p>
+                <h2 class="text-lg font-bold flex items-center gap-2 justify-center"><i data-lucide="smartphone-charging" class="text-blue-400"></i> Instant Connect</h2>
+                <p class="text-xs text-slate-400">One phone taps Send (shows clean QR), the other phone scans it.</p>
                 
                 <div class="grid grid-cols-2 gap-4 pt-2">
                     <button id="btnZapSend" class="bg-blue-600 hover:bg-blue-700 py-4 px-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2 text-white transition active:scale-95">
@@ -52,7 +52,7 @@
                 </div>
 
                 <div id="qrContainerWrapper" class="hidden bg-slate-950 p-6 rounded-xl border border-slate-700 space-y-3">
-                    <p class="text-xs text-amber-400 font-medium">Scan this high-visibility code:</p>
+                    <p class="text-xs text-amber-400 font-medium">Scan this code on the other phone:</p>
                     <div id="qrcode" class="bg-white p-4 rounded-xl inline-block mx-auto"></div>
                     <div class="text-sm font-mono tracking-widest text-slate-400 mt-2">ROOM CODE: <span id="fallbackCodeText" class="text-blue-400 font-bold">----</span></div>
                 </div>
@@ -65,7 +65,7 @@
                 <div id="fallbackBridge" class="pt-2 border-t border-slate-700 text-left">
                     <label class="block text-[10px] text-slate-400">Can't use camera? Type Room Code here:</label>
                     <div class="flex gap-2 mt-1">
-                        <input id="inputRoomToken" type="text" placeholder="Example: 5829" class="flex-1 bg-slate-900 text-sm font-mono rounded-xl p-2.5 border border-slate-700 text-center uppercase tracking-widest">
+                        <input id="inputRoomToken" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="e.g., 5829" class="flex-1 bg-slate-900 text-sm font-mono rounded-xl p-2.5 border border-slate-700 text-center uppercase tracking-widest">
                         <button id="btnManualConnect" class="bg-blue-600 px-4 rounded-xl text-xs font-bold">Link</button>
                     </div>
                 </div>
@@ -128,11 +128,10 @@
 
                 <div id="receiveStatusPlaceholder" class="text-center py-10 text-sm text-slate-500 flex flex-col items-center gap-2">
                     <i data-lucide="radar" class="w-10 h-10 text-slate-600 animate-spin"></i>
-                    Ready and waiting for incoming file chunk streams...
+                    Ready and waiting for incoming data...
                 </div>
             </div>
         </section>
-
     </main>
 
     <div id="incomingRequestPopup" class="fixed top-20 left-4 right-4 bg-slate-950 border-2 border-emerald-500 p-4 rounded-2xl shadow-2xl z-50 transform -translate-y-40 opacity-0 transition-all duration-300 pointer-events-none max-w-sm mx-auto">
@@ -145,6 +144,8 @@
             </div>
         </div>
     </div>
+
+    <div id="toastNotification" class="fixed bottom-24 left-4 right-4 max-w-xs mx-auto bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs font-medium text-center z-50 pointer-events-none opacity-0 transform translate-y-2 transition-all duration-300"></div>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 py-2 px-4 flex justify-around items-center z-10 max-w-md mx-auto rounded-t-2xl shadow-2xl">
         <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center text-blue-500" data-tab="home">
@@ -164,7 +165,9 @@
         let receivedChunks = [], expectedSize = 0, expectedName = "", expectedMime = "";
         let currentFile = null, timeStart = 0;
         let qrScannerInstance = null;
-        const CHUNK_SIZE = 16384;
+        
+        // High Speed Variable Pipeline Chunk Sizing Configuration
+        const HIGH_SPEED_CHUNK = 262144; // Optimized high-bandwidth 256KB buffer package blocks
 
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -172,22 +175,52 @@
             bindInterfaceEvents();
         });
 
+        function showMessage(msg, isSuccess = true) {
+            const toast = document.getElementById('toastNotification');
+            toast.innerText = msg;
+            toast.classList.remove('border-emerald-500', 'border-rose-500', 'text-emerald-400', 'text-rose-400');
+            toast.classList.add(isSuccess ? 'border-emerald-500' : 'border-rose-500');
+            toast.classList.add(isSuccess ? 'text-emerald-400' : 'text-rose-400');
+            
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 3500);
+        }
+
         function initializePeerCloudEngine() {
-            // Generate a simple numeric 4-digit ID
             myRoomCode = Math.floor(1000 + Math.random() * 9000).toString();
             
-            // Connect to cloud signaling framework
-            peerInstance = new Peer(myRoomCode);
+            // WebRTC Signaling Network Engine Instance
+            peerInstance = new Peer(myRoomCode, {
+                debug: 1,
+                config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+            });
 
             peerInstance.on('open', (id) => {
                 document.getElementById('myUsernameDisplay').innerText = "Online - Room " + id;
-                document.getElementById('statusDot').classList.replace('bg-blue-500', 'bg-emerald-500');
+                document.getElementById('statusDot').className = "w-2 h-2 rounded-full bg-emerald-500";
             });
 
-            // Listen for direct structural inbound connection requests
             peerInstance.on('connection', (conn) => {
                 networkConnection = conn;
                 setupConnectionDataListeners();
+            });
+
+            peerInstance.on('error', (err) => {
+                console.error(err);
+                if(err.type === 'unavailable-id') {
+                    // Collision recovery retry logic block
+                    myRoomCode = Math.floor(1000 + Math.random() * 9000).toString();
+                    initializePeerCloudEngine();
+                } else if(err.type === 'peer-not-found') {
+                    showMessage("Room code not found. Make sure the other phone is showing its QR code!", false);
+                } else {
+                    showMessage("Cloud connection failure. Check internet settings.", false);
+                }
             });
         }
 
@@ -203,7 +236,6 @@
                 document.getElementById('scannerContainerWrapper').classList.add('hidden');
                 document.getElementById('qrContainerWrapper').classList.remove('hidden');
                 
-                // Render the simple clean QR code
                 document.getElementById('qrcode').innerHTML = "";
                 new QRCode(document.getElementById('qrcode'), { text: myRoomCode, width: 180, height: 180 });
                 document.getElementById('fallbackCodeText').innerText = myRoomCode;
@@ -213,7 +245,11 @@
             document.getElementById('btnStopScanner').addEventListener('click', stopCameraScannerEngine);
             document.getElementById('btnManualConnect').addEventListener('click', () => {
                 const targetCode = document.getElementById('inputRoomToken').value.trim();
-                if(targetCode) linkToTargetPeerRoom(targetCode);
+                if(targetCode.length >= 4) {
+                    linkToTargetPeerRoom(targetCode);
+                } else {
+                    showMessage("Please enter a valid 4-digit room code.", false);
+                }
             });
             
             document.getElementById('dropZone').addEventListener('click', () => document.getElementById('fileInput').click());
@@ -229,18 +265,23 @@
             qrScannerInstance = new Html5Qrcode("reader");
             qrScannerInstance.start(
                 { facingMode: "environment" },
-                { fps: 10, qrbox: 250 },
+                { fps: 15, qrbox: 250 },
                 (decodedText) => {
                     stopCameraScannerEngine();
                     linkToTargetPeerRoom(decodedText.trim());
                 },
-                () => {}
-            ).catch(err => alert("Camera configuration error: " + err));
+                () => {} // Silent trace scan optimization handler loop
+            ).catch(err => {
+                document.getElementById('scannerContainerWrapper').classList.add('hidden');
+                showMessage("Camera Access Denied! Please type the Room Code instead.", false);
+            });
         }
 
         function stopCameraScannerEngine() {
             if(qrScannerInstance) {
                 qrScannerInstance.stop().then(() => {
+                    document.getElementById('scannerContainerWrapper').classList.add('hidden');
+                }).catch(()=> {
                     document.getElementById('scannerContainerWrapper').classList.add('hidden');
                 });
             }
@@ -253,8 +294,10 @@
 
         function setupConnectionDataListeners() {
             networkConnection.on('open', () => {
-                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-emerald-400 font-bold">Connected to Room!</span>`;
+                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-emerald-400 font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Connected Securely!</span>`;
+                lucide.createIcons();
                 document.getElementById('qrContainerWrapper').classList.add('hidden');
+                showMessage("Device linked successfully!", true);
                 switchTab('send');
                 if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
             });
@@ -262,10 +305,16 @@
             networkConnection.on('data', (data) => {
                 parseInboundPayloadMessage(data);
             });
+
+            networkConnection.on('close', () => {
+                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-slate-500"><i data-lucide="unplug"></i> Connection closed</span>`;
+                lucide.createIcons();
+                showMessage("Peer disconnected.", false);
+            });
         }
 
         function stageOutboundFile(file) {
-            if(!networkConnection) return alert("Connect devices first!");
+            if(!networkConnection) return showMessage("Please connect your devices first!", false);
             currentFile = file;
 
             document.getElementById('airplaneContainer').classList.remove('hidden');
@@ -283,6 +332,7 @@
                 const msg = JSON.parse(payload);
                 if(msg.type === 'meta') {
                     expectedName = msg.name; expectedSize = msg.size; expectedMime = msg.mime;
+                    receivedChunks = []; // Clear array cache allocation buffer
                     document.getElementById('popupMetaText').innerHTML = `File: <strong>${msg.name}</strong> (${(msg.size/(1024*1024)).toFixed(2)} MB)`;
                     const popup = document.getElementById('incomingRequestPopup');
                     popup.classList.remove('-translate-y-40', 'opacity-0', 'pointer-events-none');
@@ -293,7 +343,6 @@
                     executeBinaryStreamOutflow();
                 }
             } else {
-                // Read incoming array buffer array chunks
                 receivedChunks.push(payload);
                 let currentTotal = receivedChunks.reduce((a, b) => a + b.byteLength, 0);
                 
@@ -305,6 +354,11 @@
                 document.getElementById('receiveFileProgress').style.width = `${pct}%`;
                 document.getElementById('receiveFilePercent').innerText = `${pct}%`;
                 document.getElementById('receiveFileSize').innerText = `${(currentTotal/(1024*1024)).toFixed(1)} / ${(expectedSize/(1024*1024)).toFixed(1)} MB`;
+
+                let elapsed = (performance.now() - timeStart) / 1000;
+                if (elapsed > 0) {
+                    document.getElementById('receiveFileSpeed').innerText = ((currentTotal / 1024 / 1024) / elapsed).toFixed(1) + " MB/s";
+                }
 
                 if(currentTotal >= expectedSize) {
                     finalizeDownloadAssembly();
@@ -330,14 +384,28 @@
             timeStart = performance.now();
 
             let offset = 0;
-            const rdr = new FileReader();
+            const fileReader = new FileReader();
             
             const readNextSlice = () => {
-                const slice = currentFile.slice(offset, offset + CHUNK_SIZE);
-                rdr.readAsArrayBuffer(slice);
+                if (offset < currentFile.size) {
+                    const slice = currentFile.slice(offset, offset + HIGH_SPEED_CHUNK);
+                    fileReader.readAsArrayBuffer(slice);
+                }
             };
 
-            rdr.onload = async (e) => {
+            fileReader.onload = async (e) => {
+                // HIGH SPEED ENGINE UPGRADE: Direct pipeline back-pressure buffer check management
+                if (networkConnection.dataChannel && networkConnection.dataChannel.bufferedAmount > 8388608) { // 8MB safety cushion threshold ceiling
+                    await new Promise(resolve => {
+                        const checkInterval = setInterval(() => {
+                            if (networkConnection.dataChannel.bufferedAmount < 2097152) { // Dropped to safe 2MB boundary limit
+                                clearInterval(checkInterval);
+                                resolve();
+                            }
+                        }, 4);
+                    });
+                }
+
                 networkConnection.send(e.target.result);
                 offset += e.target.result.byteLength;
 
@@ -346,29 +414,39 @@
                 document.getElementById('sendFilePercent').innerText = `${pct}%`;
                 
                 let elapsed = (performance.now() - timeStart) / 1000;
-                document.getElementById('sendFileSpeed').innerText = ((offset / 1024) / elapsed).toFixed(0) + " KB/s";
+                if (elapsed > 0) {
+                    document.getElementById('sendFileSpeed').innerText = ((offset / 1024 / 1024) / elapsed).toFixed(1) + " MB/s";
+                }
 
                 if(offset < currentFile.size) {
-                    setTimeout(readNextSlice, 1); // Micro-delay throttling to safeguard WebRTC data channels
+                    readNextSlice();
                 } else {
-                    alert("File sent successfully!");
-                    document.getElementById('sendProgressWrapper').classList.add('hidden');
+                    showMessage("File sent successfully!", true);
+                    setTimeout(() => {
+                        document.getElementById('sendProgressWrapper').classList.add('hidden');
+                    }, 2000);
                 }
             };
+
             readNextSlice();
         }
 
         function finalizeDownloadAssembly() {
             const blob = new Blob(receivedChunks, { type: expectedMime });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = expectedName; a.click();
+            const anchor = document.createElement('a');
+            anchor.href = url; 
+            anchor.download = expectedName; 
+            anchor.click();
             
+            showMessage("File received and downloaded successfully!", true);
             if(navigator.vibrate) navigator.vibrate(300);
 
             receivedChunks = [];
-            document.getElementById('receiveProgressWrapper').classList.add('hidden');
-            document.getElementById('receiveStatusPlaceholder').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('receiveProgressWrapper').classList.add('hidden');
+                document.getElementById('receiveStatusPlaceholder').classList.remove('hidden');
+            }, 2000);
         }
     </script>
 </body>
