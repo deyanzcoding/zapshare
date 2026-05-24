@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AirShare Pro - Scan & Share</title>
+    <title>ZapShare Pro - Fast Scan</title>
     <meta name="theme-color" content="#2563eb">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- QRCode Generator Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- QR Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <style>
         .tab-content { display: none; }
@@ -27,84 +24,74 @@
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between">
 
-    <!-- Header -->
     <header class="bg-slate-800 p-4 shadow-lg flex justify-between items-center">
         <div class="flex items-center gap-2">
             <i data-lucide="zap" class="text-amber-400 fill-amber-400 w-6 h-6"></i>
-            <h1 class="text-xl font-bold tracking-tight">ZapShare</h1>
+            <h1 class="text-xl font-bold tracking-tight">ZapShare Ultra</h1>
         </div>
         <div class="flex items-center gap-1.5 bg-slate-950 text-xs px-3 py-1 rounded-full border border-slate-700">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span id="myUsernameDisplay">Device-Ready</span>
+            <span class="w-2 h-2 rounded-full bg-blue-500" id="statusDot"></span>
+            <span id="myUsernameDisplay">Connecting Cloud...</span>
         </div>
     </header>
 
-    <!-- Main Body Container -->
     <main class="flex-1 overflow-y-auto p-4 max-w-md mx-auto w-full pb-24">
         
-        <!-- Tab: Home (Connection Deck) -->
         <section id="homeTab" class="tab-content active space-y-4">
             <div class="bg-slate-800 p-5 rounded-2xl shadow-xl border border-slate-700 space-y-4 text-center">
-                <h2 class="text-lg font-bold flex items-center gap-2 justify-center"><i data-lucide="smartphone-charging" class="text-blue-400"></i> Instant Connect</h2>
-                <p class="text-xs text-slate-400">To transfer, one device must Send (Show QR) and the other must Receive (Scan QR).</p>
+                <h2 class="text-lg font-bold flex items-center gap-2 justify-center"><i data-lucide="smartphone-charging" class="text-blue-400"></i> Local Instant Connect</h2>
+                <p class="text-xs text-slate-400">One phone taps Send (shows simple QR), the other taps Scan (reads QR).</p>
                 
                 <div class="grid grid-cols-2 gap-4 pt-2">
                     <button id="btnZapSend" class="bg-blue-600 hover:bg-blue-700 py-4 px-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2 text-white transition active:scale-95">
                         <i data-lucide="log-out" class="w-8 h-8 rotate-[-45deg]"></i> Send File
                     </button>
                     <button id="btnZapReceive" class="bg-emerald-600 hover:bg-emerald-700 py-4 px-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2 text-white transition active:scale-95">
-                        <i data-lucide="qr-code" class="w-8 h-8"></i> Scan & Receive
+                        <i data-lucide="qr-code" class="w-8 h-8"></i> Scan QR
                     </button>
                 </div>
 
-                <!-- QR Generation Area (Host) -->
-                <div id="qrContainerWrapper" class="hidden bg-slate-950 p-4 rounded-xl border border-slate-700 space-y-3">
-                    <p class="text-xs text-amber-400 font-medium">Scan this code from the other device:</p>
-                    <div id="qrcode" class="bg-white p-3 rounded-xl inline-block mx-auto"></div>
-                    <div class="text-[10px] text-slate-500 animate-pulse">Waiting for network pairing connection...</div>
+                <div id="qrContainerWrapper" class="hidden bg-slate-950 p-6 rounded-xl border border-slate-700 space-y-3">
+                    <p class="text-xs text-amber-400 font-medium">Scan this high-visibility code:</p>
+                    <div id="qrcode" class="bg-white p-4 rounded-xl inline-block mx-auto"></div>
+                    <div class="text-sm font-mono tracking-widest text-slate-400 mt-2">ROOM CODE: <span id="fallbackCodeText" class="text-blue-400 font-bold">----</span></div>
                 </div>
 
-                <!-- Camera Scanner Area (Client) -->
                 <div id="scannerContainerWrapper" class="hidden bg-slate-950 p-3 rounded-xl border border-slate-700 space-y-2">
                     <div id="reader" class="w-full overflow-hidden rounded-xl"></div>
                     <button id="btnStopScanner" class="w-full bg-rose-600 text-xs font-bold py-2 rounded-lg">Cancel Scanner</button>
                 </div>
 
-                <!-- Hidden Legacy Manual Exchange Input (Just in case camera lacks permission) -->
-                <div id="fallbackBridge" class="hidden pt-2 border-t border-slate-700 text-left">
-                    <label class="block text-[10px] text-slate-400">Signal Code Fallback:</label>
+                <div id="fallbackBridge" class="pt-2 border-t border-slate-700 text-left">
+                    <label class="block text-[10px] text-slate-400">Can't use camera? Type Room Code here:</label>
                     <div class="flex gap-2 mt-1">
-                        <input id="inputToken" type="text" placeholder="Paste fallback token..." class="flex-1 bg-slate-900 text-xs rounded p-1.5 border border-slate-700">
-                        <button id="btnConnect" class="bg-slate-700 px-3 rounded text-xs font-bold">Link</button>
+                        <input id="inputRoomToken" type="text" placeholder="Example: 5829" class="flex-1 bg-slate-900 text-sm font-mono rounded-xl p-2.5 border border-slate-700 text-center uppercase tracking-widest">
+                        <button id="btnManualConnect" class="bg-blue-600 px-4 rounded-xl text-xs font-bold">Link</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Device Connection Status Status Card -->
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Network Node Status</h3>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Network Status</h3>
                 <div id="connectedDevicesList" class="text-sm text-slate-500 py-2 flex items-center justify-center gap-2">
-                    <i data-lucide="unplug" class="w-5 h-5"></i> Unpaired (Disconnect state)
+                    <i data-lucide="unplug" class="w-5 h-5"></i> Unpaired (Waiting)
                 </div>
             </div>
         </section>
 
-        <!-- Tab: Send File Box -->
         <section id="sendTab" class="tab-content space-y-4">
             <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 text-center relative overflow-hidden">
                 <div id="airplaneContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center hidden">
                     <i data-lucide="send" id="airplaneIcon" class="w-16 h-16 text-blue-400"></i>
                 </div>
                 
-                <h2 class="text-lg font-bold mb-3"><i data-lucide="file-up" class="inline text-blue-400 mr-1"></i> Choose Transfers</h2>
+                <h2 class="text-lg font-bold mb-3">Choose Transfers</h2>
                 <div id="dropZone" class="border-2 border-dashed border-slate-600 rounded-xl p-10 hover:border-blue-500 bg-slate-900/40 cursor-pointer">
                     <input type="file" id="fileInput" class="hidden">
                     <i data-lucide="paperclip" class="w-12 h-12 text-slate-500 mx-auto mb-2"></i>
                     <p class="text-sm font-bold">Select File to Send</p>
-                    <p class="text-xs text-slate-500 mt-1">Apps, Videos, Photos, Music</p>
                 </div>
 
-                <!-- Progress Bars -->
                 <div id="sendProgressWrapper" class="hidden mt-4 text-left bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5">
                     <div class="flex justify-between text-xs font-medium">
                         <span id="sendFileName" class="truncate max-w-[200px]">Filename.apk</span>
@@ -121,7 +108,6 @@
             </div>
         </section>
 
-        <!-- Tab: Receive File Container -->
         <section id="receiveTab" class="tab-content space-y-4">
             <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
                 <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="download" class="text-emerald-400"></i> Transfer Stream</h2>
@@ -142,27 +128,13 @@
 
                 <div id="receiveStatusPlaceholder" class="text-center py-10 text-sm text-slate-500 flex flex-col items-center gap-2">
                     <i data-lucide="radar" class="w-10 h-10 text-slate-600 animate-spin"></i>
-                    Ready and idling to intercept inbound data...
-                </div>
-            </div>
-        </section>
-
-        <!-- Tab: History -->
-        <section id="historyTab" class="tab-content space-y-4">
-            <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-lg font-bold">Transfer Log</h2>
-                    <button id="btnClearHistory" class="text-xs text-rose-400 hover:underline">Clear</button>
-                </div>
-                <div id="historyList" class="space-y-2 max-h-[300px] overflow-y-auto">
-                    <p class="text-center text-xs text-slate-500 py-4">No logged file transfers.</p>
+                    Ready and waiting for incoming file chunk streams...
                 </div>
             </div>
         </section>
 
     </main>
 
-    <!-- Modal Dialog Popups Notification -->
     <div id="incomingRequestPopup" class="fixed top-20 left-4 right-4 bg-slate-950 border-2 border-emerald-500 p-4 rounded-2xl shadow-2xl z-50 transform -translate-y-40 opacity-0 transition-all duration-300 pointer-events-none max-w-sm mx-auto">
         <div class="space-y-3">
             <h4 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="download-cloud" class="text-emerald-400"></i> File Incoming!</h4>
@@ -174,7 +146,6 @@
         </div>
     </div>
 
-    <!-- Navigation Menu Footer Bar -->
     <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 py-2 px-4 flex justify-around items-center z-10 max-w-md mx-auto rounded-t-2xl shadow-2xl">
         <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center text-blue-500" data-tab="home">
             <i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Home</span>
@@ -185,38 +156,40 @@
         <button onclick="switchTab('receive')" class="nav-btn flex flex-col items-center text-slate-400" data-tab="receive">
             <i data-lucide="download" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">Receive</span>
         </button>
-        <button onclick="switchTab('history')" class="nav-btn flex flex-col items-center text-slate-400" data-tab="history">
-            <i data-lucide="history" class="w-5 h-5"></i><span class="text-[10px] mt-0.5">History</span>
-        </button>
     </nav>
 
-    <!-- Application Script System Engine Engine -->
     <script>
-        let rtcPeer = null, dataChannel = null;
+        let peerInstance = null, networkConnection = null;
+        let myRoomCode = "";
         let receivedChunks = [], expectedSize = 0, expectedName = "", expectedMime = "";
         let currentFile = null, timeStart = 0;
         let qrScannerInstance = null;
-
-        const RTC_CONFIG = { 
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        {
-            urls: "turn:global.turn.twilio.com:3478?transport=udp",
-            username: "your_twilio_username",
-            credential: "your_twilio_password"
-        }
-    ] 
-};
-
-        const CHUNK_SIZE = 16384; 
+        const CHUNK_SIZE = 16384;
 
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            const myAlias = "Device-" + Math.floor(1000 + Math.random() * 9000);
-            document.getElementById('myUsernameDisplay').innerText = myAlias;
+            initializePeerCloudEngine();
             bindInterfaceEvents();
-            renderHistoryLog();
         });
+
+        function initializePeerCloudEngine() {
+            // Generate a simple numeric 4-digit ID
+            myRoomCode = Math.floor(1000 + Math.random() * 9000).toString();
+            
+            // Connect to cloud signaling framework
+            peerInstance = new Peer(myRoomCode);
+
+            peerInstance.on('open', (id) => {
+                document.getElementById('myUsernameDisplay').innerText = "Online - Room " + id;
+                document.getElementById('statusDot').classList.replace('bg-blue-500', 'bg-emerald-500');
+            });
+
+            // Listen for direct structural inbound connection requests
+            peerInstance.on('connection', (conn) => {
+                networkConnection = conn;
+                setupConnectionDataListeners();
+            });
+        }
 
         function switchTab(id) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -226,57 +199,43 @@
         }
 
         function bindInterfaceEvents() {
-            document.getElementById('btnZapSend').addEventListener('click', startSendHostProtocol);
+            document.getElementById('btnZapSend').addEventListener('click', () => {
+                document.getElementById('scannerContainerWrapper').classList.add('hidden');
+                document.getElementById('qrContainerWrapper').classList.remove('hidden');
+                
+                // Render the simple clean QR code
+                document.getElementById('qrcode').innerHTML = "";
+                new QRCode(document.getElementById('qrcode'), { text: myRoomCode, width: 180, height: 180 });
+                document.getElementById('fallbackCodeText').innerText = myRoomCode;
+            });
+
             document.getElementById('btnZapReceive').addEventListener('click', startReceiveScannerProtocol);
             document.getElementById('btnStopScanner').addEventListener('click', stopCameraScannerEngine);
-            document.getElementById('btnConnect').addEventListener('click', triggerManualTokenLink);
+            document.getElementById('btnManualConnect').addEventListener('click', () => {
+                const targetCode = document.getElementById('inputRoomToken').value.trim();
+                if(targetCode) linkToTargetPeerRoom(targetCode);
+            });
             
             document.getElementById('dropZone').addEventListener('click', () => document.getElementById('fileInput').click());
             document.getElementById('fileInput').addEventListener('change', e => { if(e.target.files.length) stageOutboundFile(e.target.files[0]); });
-
             document.getElementById('btnAcceptStream').addEventListener('click', acceptFileDownloadStream);
             document.getElementById('btnRejectStream').addEventListener('click', closeInboundPopup);
-            document.getElementById('btnClearHistory').addEventListener('click', () => { localStorage.setItem('z_hist', '[]'); renderHistoryLog(); });
         }
 
-        // ================= STEP A: SEND PROTOCOL (GENERATES CODE) =================
-        async function startSendHostProtocol() {
-            document.getElementById('qrContainerWrapper').classList.remove('hidden');
-            document.getElementById('scannerContainerWrapper').classList.add('hidden');
-            
-            rtcPeer = new RTCPeerConnection(RTC_CONFIG);
-            dataChannel = rtcPeer.createDataChannel("zapshare-channel", { ordered: true });
-            bindChannelEvents(dataChannel);
-
-            rtcPeer.onicecandidate = e => {
-                if (!e.candidate) {
-                    const encodedOffer = btoa(JSON.stringify(rtcPeer.localDescription));
-                    document.getElementById('qrcode').innerHTML = "";
-                    new QRCode(document.getElementById('qrcode'), { text: encodedOffer, width: 180, height: 180 });
-                    document.getElementById('fallbackBridge').classList.remove('hidden');
-                }
-            };
-
-            const offer = await rtcPeer.createOffer();
-            await rtcPeer.setLocalDescription(offer);
-        }
-
-        // ================= STEP B: RECEIVE PROTOCOL (SCANS CODE) =================
         function startReceiveScannerProtocol() {
             document.getElementById('scannerContainerWrapper').classList.remove('hidden');
             document.getElementById('qrContainerWrapper').classList.add('hidden');
-            document.getElementById('fallbackBridge').classList.remove('hidden');
 
             qrScannerInstance = new Html5Qrcode("reader");
             qrScannerInstance.start(
                 { facingMode: "environment" },
                 { fps: 10, qrbox: 250 },
-                async (decodedText) => {
+                (decodedText) => {
                     stopCameraScannerEngine();
-                    await parseAndRespondToScannedToken(decodedText);
+                    linkToTargetPeerRoom(decodedText.trim());
                 },
-                () => {} // Silent scan oversight logic error drop
-            ).catch(err => alert("Camera initialization failure: " + err));
+                () => {}
+            ).catch(err => alert("Camera configuration error: " + err));
         }
 
         function stopCameraScannerEngine() {
@@ -287,65 +246,28 @@
             }
         }
 
-        // ================= STEP C: PAIRING HANDSHAKE SYSTEM =================
-        async function parseAndRespondToScannedToken(scannedString) {
-            try {
-                const parsedObject = JSON.parse(atob(scannedString));
-                
-                if(!rtcPeer) { 
-                    // This device is reading the sender's offer code
-                    rtcPeer = new RTCPeerConnection(RTC_CONFIG);
-                    rtcPeer.ondatachannel = e => { dataChannel = e.channel; bindChannelEvents(dataChannel); };
-                    
-                    rtcPeer.onicecandidate = e => {
-                        if(!e.candidate) {
-                            const encodedAnswer = btoa(JSON.stringify(rtcPeer.localDescription));
-                            // Output returning handshake parameters to display on Receiver screen
-                            document.getElementById('qrcode').innerHTML = "";
-                            new QRCode(document.getElementById('qrcode'), { text: encodedAnswer, width: 140, height: 140 });
-                            document.getElementById('qrContainerWrapper').classList.remove('hidden');
-                            alert("Scan Complete! Now let the Sender quickly scan this return code to connect.");
-                        }
-                    };
-
-                    await rtcPeer.setRemoteDescription(new RTCSessionDescription(parsedObject));
-                    const answer = await rtcPeer.createAnswer();
-                    await rtcPeer.setLocalDescription(answer);
-                } else {
-                    // Sender reads receiver's return code to seal connection
-                    await rtcPeer.setRemoteDescription(new RTCSessionDescription(parsedObject));
-                }
-            } catch(e) {
-                alert("Invalid QR format structural parse mismatch error.");
-            }
+        function linkToTargetPeerRoom(roomID) {
+            networkConnection = peerInstance.connect(roomID, { reliable: true });
+            setupConnectionDataListeners();
         }
 
-        function triggerManualTokenLink() {
-            parseAndRespondToScannedToken(document.getElementById('inputToken').value.trim());
-        }
-
-        // ================= DATA TRANSFERS & LIFE CYCLES =================
-        function bindChannelEvents(chan) {
-            chan.binaryType = 'arraybuffer';
-            chan.onopen = () => {
-                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-emerald-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2"></i> Devices Connected! Ready to Send.</span>`;
-                lucide.createIcons();
+        function setupConnectionDataListeners() {
+            networkConnection.on('open', () => {
+                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-emerald-400 font-bold">Connected to Room!</span>`;
                 document.getElementById('qrContainerWrapper').classList.add('hidden');
                 switchTab('send');
                 if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            };
-            chan.onclose = () => {
-                document.getElementById('connectedDevicesList').innerHTML = `<span class="text-slate-500"><i data-lucide="unplug"></i> Disconnected</span>`;
-                lucide.createIcons();
-            };
-            chan.onmessage = e => parseInboundPayloadMessage(e.data);
+            });
+
+            networkConnection.on('data', (data) => {
+                parseInboundPayloadMessage(data);
+            });
         }
 
         function stageOutboundFile(file) {
-            if(!dataChannel || dataChannel.readyState !== "open") return alert("Connect devices first!");
+            if(!networkConnection) return alert("Connect devices first!");
             currentFile = file;
 
-            // Trigger Animation Fly Path
             document.getElementById('airplaneContainer').classList.remove('hidden');
             document.getElementById('airplaneIcon').classList.add('anim-fly');
             setTimeout(() => {
@@ -353,7 +275,7 @@
                 document.getElementById('airplaneContainer').classList.add('hidden');
             }, 800);
 
-            dataChannel.send(JSON.stringify({ type: 'meta', name: file.name, size: file.size, mime: file.type }));
+            networkConnection.send(JSON.stringify({ type: 'meta', name: file.name, size: file.size, mime: file.type }));
         }
 
         function parseInboundPayloadMessage(payload) {
@@ -371,6 +293,7 @@
                     executeBinaryStreamOutflow();
                 }
             } else {
+                // Read incoming array buffer array chunks
                 receivedChunks.push(payload);
                 let currentTotal = receivedChunks.reduce((a, b) => a + b.byteLength, 0);
                 
@@ -392,7 +315,7 @@
         function acceptFileDownloadStream() {
             closeInboundPopup();
             timeStart = performance.now();
-            dataChannel.send(JSON.stringify({ type: 'accept' }));
+            networkConnection.send(JSON.stringify({ type: 'accept' }));
         }
 
         function closeInboundPopup() {
@@ -415,10 +338,7 @@
             };
 
             rdr.onload = async (e) => {
-                if(dataChannel.bufferedAmount > 16000000) {
-                    await new Promise(r => setTimeout(r, 35));
-                }
-                dataChannel.send(e.target.result);
+                networkConnection.send(e.target.result);
                 offset += e.target.result.byteLength;
 
                 let pct = Math.round((offset / currentFile.size) * 100);
@@ -429,9 +349,8 @@
                 document.getElementById('sendFileSpeed').innerText = ((offset / 1024) / elapsed).toFixed(0) + " KB/s";
 
                 if(offset < currentFile.size) {
-                    readNextSlice();
+                    setTimeout(readNextSlice, 1); // Micro-delay throttling to safeguard WebRTC data channels
                 } else {
-                    logTransferHistory(currentFile.name, currentFile.size, 'sent');
                     alert("File sent successfully!");
                     document.getElementById('sendProgressWrapper').classList.add('hidden');
                 }
@@ -445,34 +364,11 @@
             const a = document.createElement('a');
             a.href = url; a.download = expectedName; a.click();
             
-            logTransferHistory(expectedName, expectedSize, 'received');
             if(navigator.vibrate) navigator.vibrate(300);
 
             receivedChunks = [];
             document.getElementById('receiveProgressWrapper').classList.add('hidden');
             document.getElementById('receiveStatusPlaceholder').classList.remove('hidden');
-        }
-
-        function logTransferHistory(name, size, dir) {
-            let list = JSON.parse(localStorage.getItem('z_hist') || '[]');
-            list.unshift({ name, size: (size/(1024*1024)).toFixed(1) + " MB", dir, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-            localStorage.setItem('z_hist', JSON.stringify(list));
-            renderHistoryLog();
-        }
-
-        function renderHistoryLog() {
-            let list = JSON.parse(localStorage.getItem('z_hist') || '[]');
-            const container = document.getElementById('historyList');
-            if(!list.length) {
-                container.innerHTML = `<p class="text-center text-xs text-slate-500 py-4">No logged file transfers.</p>`;
-                return;
-            }
-            container.innerHTML = list.map(i => `
-                <div class="flex items-center justify-between bg-slate-900/60 p-2.5 rounded-xl border border-slate-700 text-xs">
-                    <span class="truncate max-w-[65%] font-medium text-slate-300">${i.dir === 'sent' ? '↗️' : '↙️'} ${i.name}</span>
-                    <span class="text-slate-500 text-[10px]">${i.size} (${i.time})</span>
-                </div>
-            `).join('');
         }
     </script>
 </body>
